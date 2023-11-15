@@ -30,6 +30,12 @@ var (
 )
 
 func StartBot() {
+	// prepare db
+	schedule, err := GetSchedule()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Создаем бота с токеном, полученным от BotFather
 	bot, err := tgbotapi.NewBotAPI(botApi)
 	if err != nil {
@@ -45,11 +51,6 @@ func StartBot() {
 		log.Fatal(err)
 	}
 
-	// scheduler vars
-	schedule := make(map[string]string, 4)
-	isUpdated := false
-	updatedAt := time.Now().In(loc).AddDate(0, 0, -1).Day()
-
 	// init cron
 	location := cron.WithLocation(loc)
 	cronJob := cron.New(location)
@@ -59,9 +60,8 @@ func StartBot() {
 
 		now := time.Now().In(loc)
 		weekDay := now.Weekday()
-		currentDay := now.Day()
 
-		if weekDay == time.Saturday || weekDay == time.Sunday || now.Hour() < startTime || now.Hour() > endTime || (isUpdated && currentDay != updatedAt) {
+		if weekDay == time.Saturday || weekDay == time.Sunday || now.Hour() < startTime || now.Hour() > endTime {
 			fmt.Println("Sleeping")
 			return
 		}
@@ -84,12 +84,12 @@ func StartBot() {
 				}
 			}
 			// save schedule
+			err := SaveSchedule(links)
+			if err != nil {
+				return
+			}
 			schedule = make(map[string]string, 4)
 			schedule = links
-
-			// save updated
-			updatedAt = currentDay
-			isUpdated = true
 		}
 	})
 
