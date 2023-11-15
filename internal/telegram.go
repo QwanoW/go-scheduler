@@ -86,12 +86,12 @@ func StartBot() {
 			scheduleMsgIds = []int{}
 			for k, v := range links {
 				msg := tgbotapi.NewMessage(channelID, fmt.Sprintf("<a href='%v'>%v</a>", v, k))
-				scheduleMsgIds = append(scheduleMsgIds, msg.ReplyToMessageID)
 				msg.ParseMode = tgbotapi.ModeHTML
-				_, err := bot.Send(msg)
+				message, err := bot.Send(msg)
 				if err != nil {
 					log.Fatal(err)
 				}
+				scheduleMsgIds = append(scheduleMsgIds, message.MessageID)
 			}
 			// save schedule
 			err := SaveSchedule(links)
