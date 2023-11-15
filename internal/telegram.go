@@ -14,8 +14,8 @@ import (
 
 var (
 	// execution time
-	startTime = 19
-	endTime   = 22
+	startTime = 13
+	endTime   = 16
 
 	// api
 	botApi    = os.Getenv("TG_BOT_API_KEY")
