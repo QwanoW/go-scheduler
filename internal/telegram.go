@@ -14,8 +14,8 @@ import (
 
 var (
 	// execution time
-	startTime = 13
-	endTime   = 16
+	startTime = 19
+	endTime   = 22
 
 	// api
 	botApi    = os.Getenv("TG_BOT_API_KEY")
@@ -31,6 +31,11 @@ var (
 
 func StartBot() {
 	// prepare db
+	scheduleMsgIds, err := GetMsgIds()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	schedule, err := GetSchedule()
 	if err != nil {
 		log.Fatal(err)
@@ -75,8 +80,13 @@ func StartBot() {
 			log.Println("No new links")
 			return
 		} else {
+			if len(scheduleMsgIds) > 0 {
+				deletePreviousSchedule(bot, channelID, scheduleMsgIds)
+			}
+			scheduleMsgIds = []int{}
 			for k, v := range links {
 				msg := tgbotapi.NewMessage(channelID, fmt.Sprintf("<a href='%v'>%v</a>", v, k))
+				scheduleMsgIds = append(scheduleMsgIds, msg.ReplyToMessageID)
 				msg.ParseMode = tgbotapi.ModeHTML
 				_, err := bot.Send(msg)
 				if err != nil {
@@ -90,6 +100,11 @@ func StartBot() {
 			}
 			schedule = make(map[string]string, 4)
 			schedule = links
+
+			err = SaveMsgIds(scheduleMsgIds)
+			if err != nil {
+				return
+			}
 		}
 	})
 
@@ -102,4 +117,14 @@ func StartBot() {
 	defer cronJob.Stop()
 
 	select {}
+}
+
+func deletePreviousSchedule(bot *tgbotapi.BotAPI, channelID int64, msgIds []int) {
+	for _, messageID := range msgIds {
+		msgToDelete := tgbotapi.NewDeleteMessage(channelID, messageID)
+		_, err := bot.Request(msgToDelete)
+		if err != nil {
+			log.Println(err)
+		}
+	}
 }
